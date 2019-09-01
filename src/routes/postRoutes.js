@@ -3,7 +3,7 @@ const passport = require('passport');
 const PostController = require('../controllers/postController');
 
 module.exports = (app) => {
-    app.get('/api/posts', passport.authenticate('jwt', { session: false }), PostController.index);
+    app.get('/api/posts', PostController.index);
 
     app.post('/api/posts', passport.authenticate('jwt', { session: false }), PostController.create);
 

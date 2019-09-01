@@ -4,7 +4,6 @@ const Validator = require('./validations/postValidations');
 module.exports = {
     
     async index(req, res) {
-        const user = req.user.id;
         const posts = await Post.find({});
         res.json(posts);
     },

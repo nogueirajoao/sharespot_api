@@ -7,6 +7,17 @@ const Validator = require('./validations/userValidations');
 const key = require('../../config/dev_keys').secret;
 
 module.exports = {
+
+    async getUser(req, res) {
+        const id = req.params.id;
+        try {
+            const user = await User.findById(id);
+            res.json(user);
+        } catch(err) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+    },
+
     async register(req, res) {
         const { errors, isValid } = Validator.validateRegisterInput(req.body);
 
@@ -38,7 +49,7 @@ module.exports = {
         }
     },
 
-    login(req, res) {
+    async login(req, res) {
         const { errors, isValid } = Validator.validateLoginInput(req.body);
 
         // Check Validation
@@ -49,37 +60,35 @@ module.exports = {
         const email = req.body.email;
         const password = req.body.password;
 
-        // Find user by email
-        User.findOne({ email }).then(user => {
-            // Check for user
-            if (!user) {
-                errors.email = 'User not found';
-                return res.status(404).json(errors);
-            }
+        const user = await User.findOne({ email });
 
-            // Check Password
-            bcrypt.compare(password, user.password).then(isMatch => {
-                if (isMatch) {
-                // User Matched
-                const payload = { id: user.id, name: user.name };
+        if (!user) {
+            errors.email = 'User not found';
+            return res.status(404).json(errors);
+        }
 
-                jwt.sign(
-                    payload,
-                    key,
-                    { expiresIn: 360000 },
-                    (err, token) => {
+        // Check Password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (isMatch) {
+            // User Matched
+            const payload = { id: user.id, name: user.name };
+
+            jwt.sign(
+                payload,
+                key,
+                { expiresIn: 360000 },
+                (err, token) => {
                     res.json({
                         success: true,
                         token: 'Bearer ' + token
                     });
-                    }
-                );
-                } else {
-                errors.password = 'Password incorrect';
-                return res.status(400).json(errors);
                 }
-            });
-        });
+            );
+        } else {
+            errors.password = 'Password incorrect';
+            return res.status(400).json(errors);
+        }
+
     },
 
     current(req, res) {
